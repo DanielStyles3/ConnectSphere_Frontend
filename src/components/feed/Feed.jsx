@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import Post from "../post/Post";
 import Share from "../share/Share";
 import "./feed.css";
@@ -7,39 +7,29 @@ import { AuthContext } from "../../context/AuthContext";
 
 export default function Feed({ username }) {
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const {user}=useContext(AuthContext)
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchPosts = async () => {
-      try {
-        const res = username
-          ? await axios.get("/posts/profile/" + username)
-          : await axios.get("posts/timeline/64db7e740b9ed6615e99d631");
-  
-        setPosts(res.data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        setLoading(false);
-      }
+      const res = username
+        ? await axios.get("/posts/profile/" + username)
+        : await axios.get("posts/timeline/" + user._id);
+      setPosts(
+        res.data.sort((p1, p2) => {
+          return new Date(p2.createdAt) - new Date(p1.createdAt);
+        })
+      );
     };
-  
     fetchPosts();
-  }, [username]);
-  
+  }, [username, user._id]);
 
   return (
     <div className="feed">
       <div className="feedWrapper">
-        <Share />
-        {loading ? (
-          <p>Loading...</p>
-        ) : posts.length === 0 ? (
-          <p>No posts to display.</p>
-        ) : (
-          posts.map((p) => <Post key={p._id} post={p} />)
-        )}
+        {(!username || username === user.username) && <Share />}
+        {posts.map((p) => (
+          <Post key={p._id} post={p} />
+        ))}
       </div>
     </div>
   );
